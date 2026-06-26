@@ -23,7 +23,7 @@ Telegram only lets a bot DM users who have started or messaged it first, so user
 ## What You Need To Provide
 
 - `BOT_TOKEN`: your Telegram bot token. Keep this as a Cloudflare Worker secret.
-- `WEBHOOK_SECRET`: any long random string. Telegram sends it back in a header so random internet requests cannot trigger the bot.
+- `WEBHOOK_SECRET`: any long random string. Keep this as a Cloudflare Worker secret too. Telegram sends it back in a header so random internet requests cannot trigger the bot.
 - A Cloudflare D1 database ID, created with Wrangler.
 
 ## Local Files
@@ -61,12 +61,11 @@ database_name = "telehub"
 database_id = "your-real-d1-database-id"
 ```
 
-Set `WEBHOOK_SECRET` in `wrangler.toml`.
-
-Store the bot token as a Worker secret:
+Store the bot token and webhook secret as Worker secrets:
 
 ```bash
 npx wrangler secret put BOT_TOKEN
+npx wrangler secret put WEBHOOK_SECRET
 ```
 
 Apply the database migrations:

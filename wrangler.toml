@@ -3,7 +3,6 @@ main = "src/worker.ts"
 compatibility_date = "2026-06-26"
 
 [vars]
-WEBHOOK_SECRET = "randomlongmax100stringwebhooksecret"
 
 [[d1_databases]]
 binding = "DB"
