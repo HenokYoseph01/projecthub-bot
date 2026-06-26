@@ -54,3 +54,14 @@ export type Subscriber = {
   subscribed_at: string;
   last_notified_at: string | null;
 };
+
+export type Project = {
+  id: number;
+  channel_id: number;
+  channel_username: string | null;
+  channel_title: string | null;
+  message_id: number;
+  content: string;
+  source_url: string | null;
+  posted_at: string;
+};

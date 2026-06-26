@@ -16,7 +16,8 @@ Normal users:
 
 1. Start the bot in Telegram.
 2. Send `/subscribe`.
-3. Receive a DM whenever a verified source channel posts a new `#project`.
+3. Receive recent archived projects immediately.
+4. Receive a DM whenever a verified source channel posts a new `#project`.
 
 Telegram only lets a bot DM users who have started or messaged it first, so users must opt in before notifications can work.
 
@@ -121,6 +122,8 @@ For true Telegram webhook testing, deploy to Cloudflare first. Telegram needs a 
 - `/status` lists registered channels and subscriber count.
 
 The `/setup-webhook` endpoint also registers the persistent Telegram command menu and the bot profile descriptions shown before a user taps Start. Unknown slash commands reply with the button menu so users can recover from typos.
+
+When a verified source channel posts with `#project` or `#projects`, the bot stores the post in D1. New subscribers automatically receive the latest archived projects after subscribing.
 
 ## Channel Registration
 

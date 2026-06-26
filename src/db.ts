@@ -1,4 +1,4 @@
-import type { RegisteredChannel, Subscriber, TelegramUser } from "./types";
+import type { Project, RegisteredChannel, Subscriber, TelegramUser } from "./types";
 import { normalizeIdentifier } from "./utils";
 
 export async function upsertChannel(db: D1Database, input: {
@@ -84,4 +84,34 @@ export async function markSubscriberNotified(db: D1Database, userId: number): Pr
   await db.prepare("UPDATE subscribers SET last_notified_at = CURRENT_TIMESTAMP WHERE user_id = ?1")
     .bind(userId)
     .run();
+}
+
+export async function saveProject(db: D1Database, input: {
+  channelId: number;
+  channelUsername?: string | null;
+  channelTitle?: string | null;
+  messageId: number;
+  content: string;
+  sourceUrl?: string | null;
+}): Promise<void> {
+  await db.prepare(`
+    INSERT OR IGNORE INTO projects (
+      channel_id, channel_username, channel_title, message_id, content, source_url
+    )
+    VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+  `).bind(
+    input.channelId,
+    input.channelUsername ?? null,
+    input.channelTitle ?? null,
+    input.messageId,
+    input.content,
+    input.sourceUrl ?? null
+  ).run();
+}
+
+export async function listRecentProjects(db: D1Database, limit = 10): Promise<Project[]> {
+  const result = await db.prepare(`
+    SELECT * FROM projects ORDER BY posted_at DESC, id DESC LIMIT ?1
+  `).bind(limit).all<Project>();
+  return result.results ?? [];
 }

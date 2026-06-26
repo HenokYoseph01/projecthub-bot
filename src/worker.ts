@@ -2,22 +2,28 @@ import {
   addSubscriber,
   getVerifiedChannel,
   listChannels,
+  listRecentProjects,
   listSubscribers,
   markMessagePosted,
   markSubscriberNotified,
   messageAlreadyPosted,
   removeSubscriber,
   removeChannelByIdentifier,
+  saveProject,
   upsertChannel
 } from "./db";
 import { TelegramApi } from "./telegram";
 import type { Env, TelegramMessage, TelegramUpdate } from "./types";
 import {
   formatRepost,
+  formatProjectArchive,
   hasProjectTag,
   json,
   messageText,
+  sourceUrl,
 } from "./utils";
+
+const RECENT_PROJECT_LIMIT = 10;
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
@@ -233,7 +239,11 @@ async function sendStatus(message: TelegramMessage, env: Env, telegram: Telegram
 async function subscribeUser(message: TelegramMessage, env: Env, telegram: TelegramApi): Promise<void> {
   if (!message.from) return;
   await addSubscriber(env.DB, message.from);
-  await telegram.sendMessage(message.chat.id, "Subscribed. I will DM you when a verified channel posts a new #project.");
+  await telegram.sendMessage(
+    message.chat.id,
+    "Subscribed. I will DM you when a verified channel posts a new #project."
+  );
+  await sendRecentProjects(message.chat.id, env, telegram);
 }
 
 async function unsubscribeUser(message: TelegramMessage, env: Env, telegram: TelegramApi): Promise<void> {
@@ -329,9 +339,35 @@ async function handleChannelPost(message: TelegramMessage, env: Env, telegram: T
   if (!await getVerifiedChannel(env.DB, message.chat.id)) return;
   if (await messageAlreadyPosted(env.DB, message.chat.id, message.message_id)) return;
 
+  await saveProject(env.DB, {
+    channelId: message.chat.id,
+    channelUsername: message.chat.username,
+    channelTitle: message.chat.title,
+    messageId: message.message_id,
+    content: text,
+    sourceUrl: sourceUrl(message.chat, message.message_id)
+  });
   await notifySubscribers(message, text, env, telegram);
 
   await markMessagePosted(env.DB, message.chat.id, message.message_id);
+}
+
+async function sendRecentProjects(chatId: number, env: Env, telegram: TelegramApi): Promise<void> {
+  const projects = await listRecentProjects(env.DB, RECENT_PROJECT_LIMIT);
+
+  if (projects.length === 0) {
+    await telegram.sendMessage(chatId, "No archived project posts yet. You will receive new ones as they are posted.");
+    return;
+  }
+
+  await telegram.sendMessage(chatId, `Here are the latest ${projects.length} project post${projects.length === 1 ? "" : "s"}:`);
+
+  for (const project of projects.reverse()) {
+    await telegram.sendMessage(chatId, formatProjectArchive(project), {
+      parse_mode: "HTML",
+      link_preview_options: { is_disabled: true }
+    });
+  }
 }
 
 async function notifySubscribers(

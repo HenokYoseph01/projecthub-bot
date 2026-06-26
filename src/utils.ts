@@ -29,6 +29,25 @@ export function formatRepost(text: string, chat: TelegramChat): string {
   return `<b>${channel}</b>\n\n${body}`;
 }
 
+export function formatProjectArchive(project: {
+  channel_username: string | null;
+  channel_title: string | null;
+  content: string;
+  source_url: string | null;
+  posted_at: string;
+}): string {
+  const channel = escapeHtml(project.channel_username ? `@${project.channel_username}` : project.channel_title ?? "Unknown channel");
+  const body = escapeHtml(project.content);
+  const source = project.source_url ? `\n\n<a href="${escapeHtml(project.source_url)}">Open original post</a>` : "";
+  return `<b>${channel}</b>\n${formatDate(project.posted_at)}\n\n${body}${source}`;
+}
+
+export function sourceUrl(chat: TelegramChat, messageId: number): string | null {
+  if (chat.username) return `https://t.me/${chat.username}/${messageId}`;
+  const internalId = String(chat.id).replace(/^-100/, "");
+  return internalId ? `https://t.me/c/${internalId}/${messageId}` : null;
+}
+
 export function json(data: unknown, init?: ResponseInit): Response {
   return new Response(JSON.stringify(data), {
     ...init,
@@ -44,4 +63,10 @@ function escapeHtml(value: string): string {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
+}
+
+function formatDate(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toISOString().slice(0, 10);
 }
