@@ -1,9 +1,9 @@
 import type { TelegramChat, TelegramMessage } from "./types";
 
-const PROJECT_TAG = /(^|[^\p{L}\p{N}_])#project\b/iu;
+const PROJECT_TAG = /(^|[^\p{L}\p{N}_])#projects?\b/u;
 
 export function hasProjectTag(value: string | undefined): boolean {
-  return Boolean(value && PROJECT_TAG.test(value));
+  return Boolean(value && PROJECT_TAG.test(value.toLocaleLowerCase()));
 }
 
 export function messageText(message: TelegramMessage): string | undefined {
