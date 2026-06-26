@@ -1,0 +1,26 @@
+{
+  "name": "telegram-project-bot",
+  "version": "1.0.0",
+  "description": "Telegram bot that sends verified channel #project posts to subscribed users.",
+  "main": "src/worker.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "build": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "db:create": "wrangler d1 create telehub",
+    "db:migrate:local": "wrangler d1 migrations apply telehub --local",
+    "db:migrate:remote": "wrangler d1 migrations apply telehub --remote"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260626.1",
+    "@types/node": "^26.0.1",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3",
+    "wrangler": "^4.105.0"
+  }
+}

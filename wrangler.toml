@@ -1,0 +1,11 @@
+name = "telehub"
+main = "src/worker.ts"
+compatibility_date = "2026-06-26"
+
+[vars]
+WEBHOOK_SECRET = "randomlongmax100stringwebhooksecret"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "telehub"
+database_id = "55eb55d3-4462-4379-b007-4a77edf8758c"
