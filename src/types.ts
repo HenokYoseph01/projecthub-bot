@@ -54,14 +54,3 @@ export type Subscriber = {
   subscribed_at: string;
   last_notified_at: string | null;
 };
-
-export type PendingVerification = {
-  token: string;
-  requested_by: number;
-  channel_identifier: string;
-  channel_id: number | null;
-  channel_username: string | null;
-  channel_title: string | null;
-  expires_at: number;
-  created_at: string;
-};

@@ -39,11 +39,6 @@ export function json(data: unknown, init?: ResponseInit): Response {
   });
 }
 
-export function randomToken(): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(3));
-  return `VERIFY-${Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("").toUpperCase()}`;
-}
-
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, "&amp;")

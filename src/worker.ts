@@ -1,9 +1,5 @@
 import {
-  createPendingVerification,
   addSubscriber,
-  deleteExpiredPendingVerifications,
-  deletePendingVerification,
-  getPendingVerification,
   getVerifiedChannel,
   listChannels,
   listSubscribers,
@@ -21,12 +17,7 @@ import {
   hasProjectTag,
   json,
   messageText,
-  normalizeIdentifier,
-  randomToken
 } from "./utils";
-
-const FIVE_MINUTES = 5 * 60 * 1000;
-const TOKEN_PATTERN = /\bVERIFY-[A-Z0-9]{6}\b/i;
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
@@ -148,45 +139,53 @@ async function registerChannel(
   }
 
   const chatInfo = await telegram.getChat(channelIdentifier);
-  if (chatInfo && chatInfo.type !== "channel") {
+  if (!chatInfo) {
+    await telegram.sendMessage(
+      message.chat.id,
+      [
+        `I could not access ${channelIdentifier}.`,
+        "",
+        "Add this bot as an admin in that channel first, then run /register again."
+      ].join("\n")
+    );
+    return;
+  }
+
+  if (chatInfo.type !== "channel") {
     await telegram.sendMessage(message.chat.id, "That chat is not a Telegram channel. Please provide a channel username or ID.");
     return;
   }
 
-  if (chatInfo) {
-    const admins = await telegram.getChatAdministrators(chatInfo.id);
-    const isCreator = admins.some((admin) => admin.status === "creator" && admin.user.id === user.id);
+  const [admins, botUser] = await Promise.all([
+    telegram.getChatAdministrators(chatInfo.id),
+    telegram.getMe()
+  ]);
+  const botIsAdmin = admins.some((admin) => admin.user.id === botUser.id);
 
-    if (isCreator) {
-      await upsertChannel(env.DB, {
-        id: chatInfo.id,
-        username: chatInfo.username,
-        title: chatInfo.title,
-        addedBy: user.id,
-        verified: true
-      });
-      await telegram.sendMessage(message.chat.id, `Verified ${chatInfo.username ? `@${chatInfo.username}` : chatInfo.title}.`);
-      return;
-    }
+  if (!botIsAdmin) {
+    await telegram.sendMessage(
+      message.chat.id,
+      [
+        `I can see ${channelIdentifier}, but I am not an admin there yet.`,
+        "",
+        "Add this bot as an admin in the channel, then run /register again."
+      ].join("\n")
+    );
+    return;
   }
 
-  const token = randomToken();
-  await createPendingVerification(env.DB, {
-    token,
-    requestedBy: user.id,
-    channelIdentifier,
-    channelId: chatInfo?.id,
-    channelUsername: chatInfo?.username,
-    channelTitle: chatInfo?.title,
-    expiresAt: Date.now() + FIVE_MINUTES
+  await upsertChannel(env.DB, {
+    id: chatInfo.id,
+    username: chatInfo.username,
+    title: chatInfo.title,
+    addedBy: user.id,
+    verified: true
   });
 
   await telegram.sendMessage(message.chat.id, [
-    `Post this code in ${channelIdentifier} within 5 minutes:`,
+    `Registered ${chatInfo.username ? `@${chatInfo.username}` : chatInfo.title}.`,
     "",
-    token,
-    "",
-    "The bot must be an admin in that channel so it can see and delete the verification message."
+    "When that channel posts with #project or #projects, subscribers will receive it here."
   ].join("\n"));
 }
 
@@ -257,7 +256,7 @@ function welcomeMessage(): string {
     "If you own a channel:",
     "1. Add this bot as an admin in your channel.",
     "2. Send /register @yourchannel here.",
-    "3. If I give you a VERIFY code, post it in your channel within 5 minutes.",
+    "3. Once registered, posts tagged #project or #projects will be sent to subscribers.",
     "",
     "Useful commands:",
     "/subscribe - receive project notifications",
@@ -325,8 +324,6 @@ function normalizeCommand(command: string): string {
 async function handleChannelPost(message: TelegramMessage, env: Env, telegram: TelegramApi): Promise<void> {
   if (message.chat.type !== "channel") return;
 
-  await maybeVerifyToken(message, env, telegram);
-
   const text = messageText(message);
   if (!text || !hasProjectTag(text)) return;
   if (!await getVerifiedChannel(env.DB, message.chat.id)) return;
@@ -365,48 +362,6 @@ async function notifySubscribers(
       console.warn(`Could not notify subscriber ${subscriber.user_id}`, error);
     }
   }
-}
-
-async function maybeVerifyToken(message: TelegramMessage, env: Env, telegram: TelegramApi): Promise<void> {
-  await deleteExpiredPendingVerifications(env.DB);
-
-  const token = messageText(message)?.match(TOKEN_PATTERN)?.[0]?.toUpperCase();
-  if (!token) return;
-
-  const pending = await getPendingVerification(env.DB, token);
-  if (!pending || pending.expires_at < Date.now()) {
-    if (pending) await deletePendingVerification(env.DB, token);
-    return;
-  }
-
-  const chatUsername = message.chat.username ? normalizeIdentifier(message.chat.username) : null;
-  const expected = normalizeIdentifier(pending.channel_identifier);
-  const matchesExpectedChannel =
-    expected === String(message.chat.id) ||
-    (chatUsername !== null && expected === chatUsername) ||
-    (pending.channel_id !== null && pending.channel_id === message.chat.id);
-
-  if (!matchesExpectedChannel) return;
-
-  await upsertChannel(env.DB, {
-    id: message.chat.id,
-    username: message.chat.username ?? pending.channel_username,
-    title: message.chat.title ?? pending.channel_title,
-    addedBy: pending.requested_by,
-    verified: true
-  });
-  await deletePendingVerification(env.DB, token);
-
-  try {
-    await telegram.deleteMessage(message.chat.id, message.message_id);
-  } catch (error) {
-    console.warn("Could not delete verification token message", error);
-  }
-
-  await telegram.sendMessage(
-    pending.requested_by,
-    `Verified ${message.chat.username ? `@${message.chat.username}` : message.chat.title}. #project posts will now be sent to bot subscribers.`
-  );
 }
 
 function validSetupSecret(request: Request, env: Env): boolean {

@@ -10,7 +10,7 @@ Channel owners:
 
 1. Add the bot as an admin to their source channel.
 2. DM the bot `/register @theirchannel`.
-3. Complete the verification token flow.
+3. If the bot can access the channel as an admin, it registers immediately.
 
 Normal users:
 
@@ -116,17 +116,17 @@ For true Telegram webhook testing, deploy to Cloudflare first. Telegram needs a 
 - `/menu` shows command buttons.
 - `/subscribe` opts the user into project notifications.
 - `/unsubscribe` stops project notifications.
-- `/register @yourchannel` starts source-channel verification.
+- `/register @yourchannel` registers a source channel after the bot has been added as admin.
 - `/unregister @yourchannel` removes a source channel you registered.
 - `/status` lists registered channels and subscriber count.
 
 The `/setup-webhook` endpoint also registers the persistent Telegram command menu and the bot profile descriptions shown before a user taps Start. Unknown slash commands reply with the button menu so users can recover from typos.
 
-## Channel Verification
+## Channel Registration
 
-`/register` first tries to verify that the requesting user is the channel creator via Telegram admin data. If that is not conclusive, the bot creates a `VERIFY-XXXXXX` token. Post that token in the channel within 5 minutes. The bot verifies the channel and deletes the token message when it has delete permission.
+`/register` checks whether the bot can access the channel and is listed as an admin. If yes, the channel is registered immediately. There is no verification code to post.
 
-For source channels, the bot must be an admin so it can receive `channel_post` updates. Give it read access and, optionally, delete-message permission for cleanup.
+For source channels, the bot must remain an admin so it can receive `channel_post` updates. It does not need delete, post, edit, invite, or manage permissions for the normal notification flow.
 
 ## Scale Note
 

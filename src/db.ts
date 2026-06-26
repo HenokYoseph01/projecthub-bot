@@ -1,4 +1,4 @@
-import type { PendingVerification, RegisteredChannel, Subscriber, TelegramUser } from "./types";
+import type { RegisteredChannel, Subscriber, TelegramUser } from "./types";
 import { normalizeIdentifier } from "./utils";
 
 export async function upsertChannel(db: D1Database, input: {
@@ -45,45 +45,6 @@ export async function getVerifiedChannel(db: D1Database, channelId: number): Pro
 export async function listChannels(db: D1Database): Promise<RegisteredChannel[]> {
   const result = await db.prepare("SELECT * FROM channels ORDER BY added_at DESC").all<RegisteredChannel>();
   return result.results ?? [];
-}
-
-export async function createPendingVerification(db: D1Database, input: {
-  token: string;
-  requestedBy: number;
-  channelIdentifier: string;
-  channelId?: number | null;
-  channelUsername?: string | null;
-  channelTitle?: string | null;
-  expiresAt: number;
-}): Promise<void> {
-  await db.prepare(`
-    INSERT INTO pending_verifications (
-      token, requested_by, channel_identifier, channel_id, channel_username, channel_title, expires_at
-    )
-    VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
-  `).bind(
-    input.token,
-    input.requestedBy,
-    normalizeIdentifier(input.channelIdentifier),
-    input.channelId ?? null,
-    input.channelUsername?.toLowerCase() ?? null,
-    input.channelTitle ?? null,
-    input.expiresAt
-  ).run();
-}
-
-export async function getPendingVerification(db: D1Database, token: string): Promise<PendingVerification | null> {
-  return db.prepare("SELECT * FROM pending_verifications WHERE token = ?1")
-    .bind(token)
-    .first<PendingVerification>();
-}
-
-export async function deletePendingVerification(db: D1Database, token: string): Promise<void> {
-  await db.prepare("DELETE FROM pending_verifications WHERE token = ?1").bind(token).run();
-}
-
-export async function deleteExpiredPendingVerifications(db: D1Database, now = Date.now()): Promise<void> {
-  await db.prepare("DELETE FROM pending_verifications WHERE expires_at < ?1").bind(now).run();
 }
 
 export async function messageAlreadyPosted(db: D1Database, channelId: number, messageId: number): Promise<boolean> {

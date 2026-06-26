@@ -1,4 +1,4 @@
-import type { TelegramAdmin, TelegramChat } from "./types";
+import type { TelegramAdmin, TelegramChat, TelegramUser } from "./types";
 
 type TelegramResponse<T> = {
   ok: boolean;
@@ -19,6 +19,10 @@ export class TelegramApi {
 
   async setMyCommands(commands: Array<{ command: string; description: string }>): Promise<unknown> {
     return this.call("setMyCommands", { commands });
+  }
+
+  async getMe(): Promise<TelegramUser> {
+    return this.call<TelegramUser>("getMe", {});
   }
 
   async setMyDescription(description: string): Promise<unknown> {
@@ -49,10 +53,6 @@ export class TelegramApi {
       message_id: messageId,
       ...options
     });
-  }
-
-  async deleteMessage(chatId: number | string, messageId: number): Promise<unknown> {
-    return this.call("deleteMessage", { chat_id: chatId, message_id: messageId });
   }
 
   async getChat(chatId: number | string): Promise<TelegramChat | undefined> {
