@@ -40,6 +40,7 @@ export default {
     if (request.method === "POST" && url.pathname === "/setup-webhook") {
       if (!validSetupSecret(request, env)) return new Response("Unauthorized", { status: 401 });
       const webhookUrl = `${url.origin}/webhook`;
+      await setupBotMenu(telegram);
       await telegram.setWebhook(webhookUrl, env.WEBHOOK_SECRET);
       return json({ ok: true, webhookUrl });
     }
@@ -74,15 +75,12 @@ async function handlePrivateMessage(message: TelegramMessage, env: Env, telegram
   const [command, arg] = message.text.trim().split(/\s+/, 2);
 
   if (command === "/start") {
-    await telegram.sendMessage(message.chat.id, [
-      "TeleHub is running.",
-      "",
-      "Use /register @yourchannel to connect a channel.",
-      "Use /unregister @yourchannel to remove it.",
-      "Use /subscribe to get project notifications here.",
-      "Use /unsubscribe to stop notifications.",
-      "Use /status to see registered channels and subscribers."
-    ].join("\n"));
+    await telegram.sendMessage(message.chat.id, welcomeMessage(), mainMenuOptions());
+    return;
+  }
+
+  if (command === "/help") {
+    await telegram.sendMessage(message.chat.id, welcomeMessage(), mainMenuOptions());
     return;
   }
 
@@ -219,6 +217,59 @@ async function unsubscribeUser(message: TelegramMessage, env: Env, telegram: Tel
   if (!message.from) return;
   const changes = await removeSubscriber(env.DB, message.from.id);
   await telegram.sendMessage(message.chat.id, changes > 0 ? "Unsubscribed." : "You were not subscribed.");
+}
+
+function welcomeMessage(): string {
+  return [
+    "Welcome to TeleHub.",
+    "",
+    "TeleHub watches approved Telegram channels for posts tagged #project and sends those project posts directly to subscribers.",
+    "",
+    "If you want project alerts:",
+    "1. Tap /subscribe.",
+    "2. Keep this chat open so Telegram allows bot notifications.",
+    "3. New verified #project posts will arrive here.",
+    "",
+    "If you own a channel:",
+    "1. Add this bot as an admin in your channel.",
+    "2. Send /register @yourchannel here.",
+    "3. If I give you a VERIFY code, post it in your channel within 5 minutes.",
+    "",
+    "Useful commands:",
+    "/subscribe - receive project notifications",
+    "/unsubscribe - stop notifications",
+    "/register @channel - verify a source channel",
+    "/unregister @channel - remove your source channel",
+    "/status - show registered channels and subscriber count",
+    "/help - show this guide again"
+  ].join("\n");
+}
+
+function mainMenuOptions(): Record<string, unknown> {
+  return {
+    reply_markup: {
+      keyboard: [
+        [{ text: "/subscribe" }, { text: "/status" }],
+        [{ text: "/register @yourchannel" }],
+        [{ text: "/unsubscribe" }, { text: "/help" }]
+      ],
+      resize_keyboard: true,
+      one_time_keyboard: false,
+      input_field_placeholder: "Choose an action or type a command"
+    }
+  };
+}
+
+async function setupBotMenu(telegram: TelegramApi): Promise<void> {
+  await telegram.setMyCommands([
+    { command: "start", description: "Open TeleHub and show the guide" },
+    { command: "subscribe", description: "Receive new project notifications" },
+    { command: "unsubscribe", description: "Stop project notifications" },
+    { command: "register", description: "Verify a source channel you own" },
+    { command: "unregister", description: "Remove one of your source channels" },
+    { command: "status", description: "Show channels and subscriber count" },
+    { command: "help", description: "Show the guide again" }
+  ]);
 }
 
 async function handleChannelPost(message: TelegramMessage, env: Env, telegram: TelegramApi): Promise<void> {

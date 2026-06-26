@@ -17,6 +17,10 @@ export class TelegramApi {
     return this.call("sendMessage", { chat_id: chatId, text, ...options });
   }
 
+  async setMyCommands(commands: Array<{ command: string; description: string }>): Promise<unknown> {
+    return this.call("setMyCommands", { commands });
+  }
+
   async copyMessage(
     chatId: number | string,
     fromChatId: number | string,
