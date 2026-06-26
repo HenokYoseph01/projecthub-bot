@@ -120,7 +120,7 @@ For true Telegram webhook testing, deploy to Cloudflare first. Telegram needs a 
 - `/unregister @yourchannel` removes a source channel you registered.
 - `/status` lists registered channels and subscriber count.
 
-The `/setup-webhook` endpoint also registers the persistent Telegram command menu, so users can tap commands from the bot UI instead of memorizing them.
+The `/setup-webhook` endpoint also registers the persistent Telegram command menu and the bot profile descriptions shown before a user taps Start.
 
 ## Channel Verification
 

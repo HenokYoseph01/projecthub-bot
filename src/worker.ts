@@ -45,6 +45,15 @@ export default {
       return json({ ok: true, webhookUrl });
     }
 
+    if (request.method === "GET" && url.pathname === "/bot-profile") {
+      if (!validSetupSecret(request, env)) return new Response("Unauthorized", { status: 401 });
+      const [description, shortDescription] = await Promise.all([
+        telegram.getMyDescription(),
+        telegram.getMyShortDescription()
+      ]);
+      return json({ ok: true, description, shortDescription });
+    }
+
     if (request.method !== "POST" || url.pathname !== "/webhook") {
       return new Response("Not found", { status: 404 });
     }
@@ -261,6 +270,14 @@ function mainMenuOptions(): Record<string, unknown> {
 }
 
 async function setupBotMenu(telegram: TelegramApi): Promise<void> {
+  await telegram.setMyShortDescription("Get new #project posts from verified Telegram channels.");
+  await telegram.setMyDescription([
+    "TeleHub sends you new #project posts from verified Telegram channels.",
+    "",
+    "Example: a channel posts \"#project Need a React dev for a dashboard\" and you receive it here.",
+    "",
+    "Tap Start, then /subscribe to get alerts."
+  ].join("\n"));
   await telegram.setMyCommands([
     { command: "start", description: "Open TeleHub and show the guide" },
     { command: "subscribe", description: "Receive new project notifications" },

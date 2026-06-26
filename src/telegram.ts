@@ -21,6 +21,22 @@ export class TelegramApi {
     return this.call("setMyCommands", { commands });
   }
 
+  async setMyDescription(description: string): Promise<unknown> {
+    return this.call("setMyDescription", { description });
+  }
+
+  async setMyShortDescription(shortDescription: string): Promise<unknown> {
+    return this.call("setMyShortDescription", { short_description: shortDescription });
+  }
+
+  async getMyDescription(): Promise<unknown> {
+    return this.call("getMyDescription", {});
+  }
+
+  async getMyShortDescription(): Promise<unknown> {
+    return this.call("getMyShortDescription", {});
+  }
+
   async copyMessage(
     chatId: number | string,
     fromChatId: number | string,
