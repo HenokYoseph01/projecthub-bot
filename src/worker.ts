@@ -81,7 +81,8 @@ async function handleUpdate(update: TelegramUpdate, env: Env, telegram: Telegram
 async function handlePrivateMessage(message: TelegramMessage, env: Env, telegram: TelegramApi): Promise<void> {
   if (message.chat.type !== "private" || !message.text || !message.from) return;
 
-  const [command, arg] = message.text.trim().split(/\s+/, 2);
+  const [rawCommand, arg] = message.text.trim().split(/\s+/, 2);
+  const command = normalizeCommand(rawCommand);
 
   if (command === "/start") {
     await telegram.sendMessage(message.chat.id, welcomeMessage(), mainMenuOptions());
@@ -90,6 +91,11 @@ async function handlePrivateMessage(message: TelegramMessage, env: Env, telegram
 
   if (command === "/help") {
     await telegram.sendMessage(message.chat.id, welcomeMessage(), mainMenuOptions());
+    return;
+  }
+
+  if (command === "/menu") {
+    await telegram.sendMessage(message.chat.id, commandMenuMessage(), mainMenuOptions());
     return;
   }
 
@@ -115,6 +121,15 @@ async function handlePrivateMessage(message: TelegramMessage, env: Env, telegram
 
   if (command === "/status") {
     await sendStatus(message, env, telegram);
+    return;
+  }
+
+  if (command.startsWith("/")) {
+    await telegram.sendMessage(
+      message.chat.id,
+      `I do not recognize "${rawCommand}". Choose a command from the menu below.`,
+      mainMenuOptions()
+    );
   }
 }
 
@@ -250,7 +265,20 @@ function welcomeMessage(): string {
     "/register @channel - verify a source channel",
     "/unregister @channel - remove your source channel",
     "/status - show registered channels and subscriber count",
+    "/menu - show command buttons",
     "/help - show this guide again"
+  ].join("\n");
+}
+
+function commandMenuMessage(): string {
+  return [
+    "Choose an action:",
+    "",
+    "/subscribe - receive project notifications",
+    "/status - show registered channels and subscriber count",
+    "/register @yourchannel - verify your source channel",
+    "/unsubscribe - stop notifications",
+    "/help - show the full guide"
   ].join("\n");
 }
 
@@ -260,7 +288,7 @@ function mainMenuOptions(): Record<string, unknown> {
       keyboard: [
         [{ text: "/subscribe" }, { text: "/status" }],
         [{ text: "/register @yourchannel" }],
-        [{ text: "/unsubscribe" }, { text: "/help" }]
+        [{ text: "/unsubscribe" }, { text: "/menu" }, { text: "/help" }]
       ],
       resize_keyboard: true,
       one_time_keyboard: false,
@@ -280,6 +308,7 @@ async function setupBotMenu(telegram: TelegramApi): Promise<void> {
   ].join("\n"));
   await telegram.setMyCommands([
     { command: "start", description: "Open TeleHub and show the guide" },
+    { command: "menu", description: "Show command buttons" },
     { command: "subscribe", description: "Receive new project notifications" },
     { command: "unsubscribe", description: "Stop project notifications" },
     { command: "register", description: "Verify a source channel you own" },
@@ -287,6 +316,10 @@ async function setupBotMenu(telegram: TelegramApi): Promise<void> {
     { command: "status", description: "Show channels and subscriber count" },
     { command: "help", description: "Show the guide again" }
   ]);
+}
+
+function normalizeCommand(command: string): string {
+  return command.split("@", 1)[0].toLowerCase();
 }
 
 async function handleChannelPost(message: TelegramMessage, env: Env, telegram: TelegramApi): Promise<void> {

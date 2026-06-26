@@ -114,13 +114,14 @@ For true Telegram webhook testing, deploy to Cloudflare first. Telegram needs a 
 
 - `/start` opens the onboarding guide and shows the action menu.
 - `/help` shows the onboarding guide again.
+- `/menu` shows command buttons.
 - `/subscribe` opts the user into project notifications.
 - `/unsubscribe` stops project notifications.
 - `/register @yourchannel` starts source-channel verification.
 - `/unregister @yourchannel` removes a source channel you registered.
 - `/status` lists registered channels and subscriber count.
 
-The `/setup-webhook` endpoint also registers the persistent Telegram command menu and the bot profile descriptions shown before a user taps Start.
+The `/setup-webhook` endpoint also registers the persistent Telegram command menu and the bot profile descriptions shown before a user taps Start. Unknown slash commands reply with the button menu so users can recover from typos.
 
 ## Channel Verification
 
