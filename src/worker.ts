@@ -18,6 +18,7 @@ import {
   formatRepost,
   formatProjectArchive,
   hasProjectTag,
+  isForwardedMessage,
   json,
   messageText,
   sourceUrl,
@@ -333,6 +334,7 @@ function normalizeCommand(command: string): string {
 
 async function handleChannelPost(message: TelegramMessage, env: Env, telegram: TelegramApi): Promise<void> {
   if (message.chat.type !== "channel") return;
+  if (isForwardedMessage(message)) return;
 
   const text = messageText(message);
   if (!text || !hasProjectTag(text)) return;

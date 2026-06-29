@@ -30,6 +30,12 @@ export type TelegramMessage = {
   chat: TelegramChat;
   text?: string;
   caption?: string;
+  forward_origin?: unknown;
+  forward_date?: number;
+  forward_from?: TelegramUser;
+  forward_from_chat?: TelegramChat;
+  forward_sender_name?: string;
+  is_automatic_forward?: boolean;
 };
 
 export type TelegramAdmin = {

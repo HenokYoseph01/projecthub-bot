@@ -123,7 +123,7 @@ For true Telegram webhook testing, deploy to Cloudflare first. Telegram needs a 
 
 The `/setup-webhook` endpoint also registers the persistent Telegram command menu and the bot profile descriptions shown before a user taps Start. Unknown slash commands reply with the button menu so users can recover from typos.
 
-When a verified source channel posts with `#project` or `#projects`, the bot stores the post in D1. New subscribers automatically receive the latest archived projects after subscribing.
+When a verified source channel posts original content with `#project` or `#projects`, the bot stores the post in D1. New subscribers automatically receive the latest archived projects after subscribing. Forwarded/shared Telegram posts are ignored to reduce duplicate project spam.
 
 ## Channel Registration
 

@@ -10,6 +10,17 @@ export function messageText(message: TelegramMessage): string | undefined {
   return message.text ?? message.caption;
 }
 
+export function isForwardedMessage(message: TelegramMessage): boolean {
+  return Boolean(
+    message.forward_origin ||
+    message.forward_date ||
+    message.forward_from ||
+    message.forward_from_chat ||
+    message.forward_sender_name ||
+    message.is_automatic_forward
+  );
+}
+
 export function normalizeIdentifier(identifier: string): string {
   return identifier.trim().replace(/^@/, "").toLowerCase();
 }
